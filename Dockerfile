@@ -1,10 +1,13 @@
 # Set the python version as a build-time argument
 # with Python 3.12 as the default
-ARG PYTHON_VERSION=3.11-slim-bullseye
+ARG PYTHON_VERSION=3.12-slim-bullseye
 FROM python:${PYTHON_VERSION}
 
-# Install SQLite3 and other necessary packages
-RUN apt-get update && apt-get install -y sqlite3 libsqlite3-dev
+# Install SQLite3 >= 3.35.0 and other necessary packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 \
+    libsqlite3-dev \
+ && rm -rf /var/lib/apt/lists/*
 
 # Create a virtual environment
 RUN python -m venv /opt/venv
@@ -40,7 +43,7 @@ WORKDIR /code
 # Copy the requirements file into the container
 COPY requirements.txt /tmp/requirements.txt
 
-# copy the project code into the container's working directory
+# Copy the project code into the container's working directory
 COPY ./src /code
 
 # Install the Python project requirements
