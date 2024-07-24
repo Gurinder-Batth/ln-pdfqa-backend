@@ -1,16 +1,7 @@
-# Use the keinos/sqlite3 image as a base image
-FROM keinos/sqlite3
-
 # Set the python version as a build-time argument
 # with Python 3.12 as the default
-ARG PYTHON_VERSION=3.12-slim-bullseye
-
-# Install Python and other necessary packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python${PYTHON_VERSION} \
-    python${PYTHON_VERSION}-dev \
-    python-pip \
-    && rm -rf /var/lib/apt/lists/*
+ARG PYTHON_VERSION=3.12
+FROM python:${PYTHON_VERSION}
 
 # Create a virtual environment
 RUN python -m venv /opt/venv
@@ -19,7 +10,7 @@ RUN python -m venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
 
 # Upgrade pip
-RUN pip install --upgrade pip
+RUN pip install pip==21.3.1
 
 # Set Python-related environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -46,7 +37,7 @@ WORKDIR /code
 # Copy the requirements file into the container
 COPY requirements.txt /tmp/requirements.txt
 
-# Copy the project code into the container's working directory
+# copy the project code into the container's working directory
 COPY ./src /code
 
 # Install the Python project requirements
