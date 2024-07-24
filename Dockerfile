@@ -3,6 +3,9 @@
 ARG PYTHON_VERSION=3.11-slim-bullseye
 FROM python:${PYTHON_VERSION}
 
+# Install SQLite3 and other necessary packages
+RUN apt-get update && apt-get install -y sqlite3 libsqlite3-dev
+
 # Create a virtual environment
 RUN python -m venv /opt/venv
 
