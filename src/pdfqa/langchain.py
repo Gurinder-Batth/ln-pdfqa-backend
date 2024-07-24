@@ -15,7 +15,7 @@ os.environ["OPENAI_API_KEY"] = config("OPENAI_SECRET_KEY")
 
 
 def pdf_loader(url: str):
-    loader = PyPDFLoader(url, extract_images=True)
+    loader = PyPDFLoader(url, extract_images=False)
     return loader.load_and_split()
 
 
