@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.http import HttpResponseNotFound
 from typing import List
 
 from ninja_extra import Router
@@ -6,6 +7,8 @@ from ninja_jwt.authentication import JWTAuth
 
 from .models import Chat
 from .schemas import ChatSchemaList, ChatSchemaCreate
+from .langchain import pdf_loader, get_chain
+
 
 router = Router()
 
@@ -33,3 +36,20 @@ def create_chat(request, data: ChatSchemaCreate):
 @router.get("/{chat_id}", auth=JWTAuth(), response=ChatSchemaList)
 def get_chat(request, chat_id: int):
     return Chat.objects.get(id=chat_id, user=request.user)
+
+
+@router.post("/{chat_id}", auth=JWTAuth())
+def invoke_chain(request, chat_id: int):
+    message = request.POST["message"]
+    chat = Chat.objects.get(id=chat_id, user=request.user)
+
+    if chat is None:
+        return HttpResponseNotFound(dict(status="ERROR", detail="Chat Not Found"))
+
+    pages = pdf_loader(chat.pdf_url)
+    vector_store, chain = get_chain(pages)
+
+    output = chain.invoke(message)
+
+    vector_store.delete_collection()
+    return dict(status="OK", completion=output)
