@@ -28,3 +28,8 @@ def create_chat(request, data: ChatSchemaCreate):
     chat.save()
 
     return {"id": _id}
+
+
+@router.get("/{chat_id}", auth=JWTAuth(), response=ChatSchemaList)
+def get_chat(request, chat_id: int):
+    return Chat.objects.get(id=chat_id, user=request.user)
