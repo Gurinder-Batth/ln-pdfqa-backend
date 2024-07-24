@@ -10,7 +10,7 @@ RUN python -m venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
 
 # Upgrade pip
-RUN pip install pip==21.3.1
+RUN pip install --upgrade pip
 
 # Set Python-related environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -26,7 +26,20 @@ RUN apt-get update && apt-get install -y \
     libcairo2 \
     # other
     gcc \
+    make \
+    libreadline-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Download and compile SQLite 3.35.0 from source
+WORKDIR /tmp
+RUN wget https://www.sqlite.org/2021/sqlite-autoconf-3350000.tar.gz && \
+    tar xvfz sqlite-autoconf-3350000.tar.gz && \
+    cd sqlite-autoconf-3350000 && \
+    ./configure && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf sqlite-autoconf-3350000*
 
 # Create the mini vm's code directory
 RUN mkdir -p /code
