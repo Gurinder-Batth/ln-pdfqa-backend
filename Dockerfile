@@ -1,13 +1,16 @@
+# Use the keinos/sqlite3 image as a base image
+FROM keinos/sqlite3
+
 # Set the python version as a build-time argument
 # with Python 3.12 as the default
 ARG PYTHON_VERSION=3.12-slim-bullseye
-FROM python:${PYTHON_VERSION}
 
-# Install SQLite3 >= 3.35.0 and other necessary packages
+# Install Python and other necessary packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    sqlite3 \
-    libsqlite3-dev \
- && rm -rf /var/lib/apt/lists/*
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-dev \
+    python-pip \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create a virtual environment
 RUN python -m venv /opt/venv
