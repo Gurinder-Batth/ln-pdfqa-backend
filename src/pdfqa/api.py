@@ -1,5 +1,5 @@
 from datetime import datetime
-from django.http import HttpResponseNotFound
+from django.http import HttpResponseNotFound, HttpResponse
 from typing import List
 
 from ninja_extra import Router
@@ -8,7 +8,6 @@ from ninja_jwt.authentication import JWTAuth
 from .models import Chat
 from .schemas import ChatSchemaList, ChatSchemaCreate
 from .langchain import pdf_loader, get_chain
-
 
 router = Router()
 
@@ -49,7 +48,12 @@ def invoke_chain(request, chat_id: int):
     pages = pdf_loader(chat.pdf_url)
     vector_store, chain = get_chain(pages)
 
-    output = chain.invoke(message)
+    response = HttpResponse(content_type="text/event-stream")
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
 
-    vector_store.delete_collection()
-    return dict(status="OK", completion=output)
+    for chunk in chain.stream(message):
+        response.write(chunk)
+        response.flush()
+
+    return response
