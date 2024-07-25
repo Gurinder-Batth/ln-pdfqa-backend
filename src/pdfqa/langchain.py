@@ -25,7 +25,7 @@ def format_docs(docs):
 
 def get_chain(pages: List[Document]):
     vector_store = Chroma.from_documents(pages, OpenAIEmbeddings())
-    retriever = vector_store.as_retriever()
+    retriever = vector_store.as_retriever(search_kwargs={"k": 1})
 
     prompt = hub.pull("rlm/rag-prompt")
     llm = ChatOpenAI(model="gpt-3.5-turbo")
