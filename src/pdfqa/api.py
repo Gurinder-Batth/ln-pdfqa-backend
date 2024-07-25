@@ -38,7 +38,7 @@ def get_chat(request, chat_id: int):
 
 
 @router.post("/{chat_id}", auth=JWTAuth())
-def invoke_chain(request, chat_id: int):
+def invoke_chain(request, response: HttpResponse, chat_id: int):
     message = request.POST["message"]
     chat = Chat.objects.get(id=chat_id, user=request.user)
 
@@ -48,9 +48,7 @@ def invoke_chain(request, chat_id: int):
     pages = pdf_loader(chat.pdf_url)
     vector_store, chain = get_chain(pages)
 
-    response = HttpResponse(content_type="text/event-stream")
-    response['Cache-Control'] = 'no-cache'
-    response['X-Accel-Buffering'] = 'no'
+    response['Content-Type'] = "text/event-stream"
 
     for chunk in chain.stream(message):
         response.write(chunk)

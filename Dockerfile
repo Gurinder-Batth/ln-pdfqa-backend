@@ -55,6 +55,7 @@ COPY ./src /code
 
 # Install the Python project requirements
 RUN pip install -r /tmp/requirements.txt
+RUN pip install uvicorn
 
 # database isn't available during build
 # run any other commands that do not need the database
@@ -71,6 +72,7 @@ RUN printf "#!/bin/bash\n" > ./paracord_runner.sh && \
     printf "RUN_PORT=\"\${PORT:-8000}\"\n\n" >> ./paracord_runner.sh && \
     printf "python manage.py makemigrations --no-input\n" >> ./paracord_runner.sh && \
     printf "python manage.py migrate --no-input\n" >> ./paracord_runner.sh && \
+    printf "ls -la" >> ./paracord_runner.sh && \
     printf "uvicorn --host 0.0.0.0 --port \$RUN_PORT\n ${PROJ_NAME}.asgi:application" >> ./paracord_runner.sh
 
 # make the bash script executable
