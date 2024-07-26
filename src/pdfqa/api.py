@@ -1,5 +1,5 @@
 from datetime import datetime
-from django.http import HttpResponseNotFound, HttpResponse
+from django.http import HttpResponseNotFound, HttpResponse, StreamingHttpResponse
 from typing import List
 
 from ninja_extra import Router
@@ -48,10 +48,9 @@ def invoke_chain(request, response: HttpResponse, chat_id: int):
     pages = pdf_loader(chat.pdf_url)
     vector_store, chain = get_chain(pages)
 
-    response['Content-Type'] = "text/event-stream"
+    response = HttpResponse(content_type="application/octet-stream")
 
     for chunk in chain.stream(message):
         response.write(chunk)
-        response.flush()
 
     return response
