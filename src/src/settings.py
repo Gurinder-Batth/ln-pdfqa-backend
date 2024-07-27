@@ -28,10 +28,10 @@ ENVIRONMENT = config("RAILWAY_ENVIRONMENT_NAME", cast=str, default="development"
 SECRET_KEY = 'django-insecure-86qjtnebj7mn-c@j1fs4m=kg3w5gr#wqr=t@!@jwa6nj(o+k^-'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True if ENVIRONMENT == "production" else False
 
 ALLOWED_HOSTS = [
-    ".railway.app" if ENVIRONMENT == "production" else "127.0.0.1"
+    "fn.chatwithyourpdf.com" if ENVIRONMENT == "production" else "127.0.0.1"
 ]
 
 
@@ -142,7 +142,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    "https://*.railway.app" if ENVIRONMENT == "production" else "http://localhost:3000"
+    "https://*.chatwithyourpdf.com" if ENVIRONMENT == "production" else "http://localhost:3000"
 ]
 
 NINJA_JWT = {
