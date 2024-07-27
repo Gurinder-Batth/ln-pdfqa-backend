@@ -1,26 +1,51 @@
-from django.http import HttpResponseNotFound, StreamingHttpResponse, HttpResponseNotAllowed
+import asyncio
 from .langchain import pdf_loader, get_chain
-from django.views.decorators.csrf import csrf_exempt
 from .models import Chat
+from channels.generic.websocket import AsyncWebsocketConsumer
+from asgiref.sync import sync_to_async
+from django.core.exceptions import SynchronousOnlyOperation
 
 
-@csrf_exempt
-def invoke_chain(request):
-    if request.method == "POST":
-        chat_id = int(request.POST.get("chat_id"))
-        message = request.POST.get("message")
-        chat = Chat.objects.get(id=chat_id)
+class LangChainConsumer(AsyncWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(args, kwargs)
+        self.vector_store = None
+        self.chain = None
+        self.chat_id = None
 
-        if chat is None:
-            return HttpResponseNotFound("Chat Not Found")
+    async def connect(self):
+        # Parse chat_id from the URL.
+        self.chat_id = self.scope['url_route']['kwargs']['chat_id']
 
-        pages = pdf_loader(chat.pdf_url)
-        vector_store, chain = get_chain(pages)
+        # Get the chat object from the database.
+        chat = await sync_to_async(Chat.objects.get)(id=int(self.chat_id))
 
-        async def generator():
-            for chunk in chain.astream(message):
-                yield chunk
+        # If, chat is found, create a RAG chain.
+        if chat is not None:
+            pages = await self.load_pdf(chat.pdf_url)
+            self.vector_store, self.chain = await self.get_chain(pages)
 
-        return StreamingHttpResponse(generator(), content_type="text/event-stream")
+        # Accept the connection
+        await self.accept()
 
-    return HttpResponseNotAllowed("POST")
+    async def receive(self, text_data):
+        if self.chain is None:
+            await self.send(text_data="Invalid chat!")
+
+        input_data = text_data.strip()
+
+        async for chunk in self.chain.astream(input_data):
+            await self.send(text_data=chunk)
+
+    async def disconnect(self, close_code):
+        if self.vector_store is not None:
+            print("Deleting Collection...")
+            await sync_to_async(self.vector_store.delete_collection)()
+
+    async def load_pdf(self, pdf_url):
+        # Wrap the synchronous pdf_loader function with sync_to_async
+        return await sync_to_async(pdf_loader)(pdf_url)
+
+    async def get_chain(self, pages):
+        # Wrap the synchronous get_chain function with sync_to_async
+        return await sync_to_async(get_chain)(pages)
