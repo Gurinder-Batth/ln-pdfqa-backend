@@ -28,7 +28,7 @@ ENVIRONMENT = config("RAILWAY_ENVIRONMENT_NAME", cast=str, default="development"
 SECRET_KEY = 'django-insecure-86qjtnebj7mn-c@j1fs4m=kg3w5gr#wqr=t@!@jwa6nj(o+k^-'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True if ENVIRONMENT == "production" else False
+DEBUG = False if ENVIRONMENT == "production" else True
 
 ALLOWED_HOSTS = [
     "fn.chatwithyourpdf.com" if ENVIRONMENT == "production" else "127.0.0.1"
