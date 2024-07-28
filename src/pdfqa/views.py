@@ -1,7 +1,8 @@
 from .langchain import pdf_loader, get_chain
 from .models import Chat, Message
 from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async
+from django.db import transaction
 
 
 class LangChainConsumer(AsyncWebsocketConsumer):
@@ -17,12 +18,11 @@ class LangChainConsumer(AsyncWebsocketConsumer):
         self.chat_id = self.scope['url_route']['kwargs']['chat_id']
 
         # Get the chat object from the database.
-        chat = await sync_to_async(Chat.objects.get)(id=int(self.chat_id))
-        self.chat = chat
+        self.chat = await self.get_chat(int(self.chat_id))
 
         # If, chat is found, create a RAG chain.
-        if chat is not None:
-            pages = await self.load_pdf(chat.pdf_url)
+        if self.chat is not None:
+            pages = await self.load_pdf(self.chat.pdf_url)
             self.vector_store, self.chain = await self.get_chain(pages)
 
         # Accept the connection
@@ -39,28 +39,33 @@ class LangChainConsumer(AsyncWebsocketConsumer):
             message += chunk
             await self.send(text_data=chunk)
 
-        message_id = 1
-        last_message = await sync_to_async(Message.objects.last)()
-
-        if last_message is not None:
-            message_id = last_message.id + 1
-
-        await sync_to_async(Message.objects.bulk_create)([
-            Message(id=message_id, chat=self.chat, message=input_data, role="user"),
-            Message(id=message_id + 1, chat=self.chat, message=message, role="assistant")
-        ])
+        await self.create_messages(input_data, message)
 
     async def disconnect(self, close_code):
         if self.vector_store is not None:
             print("Deleting Collection...")
-            await sync_to_async(self.vector_store.delete_collection)()
+            await database_sync_to_async(self.vector_store.delete_collection)()
 
         print("Connection dropped!!")
 
     async def load_pdf(self, pdf_url):
-        # Wrap the synchronous pdf_loader function with sync_to_async
-        return await sync_to_async(pdf_loader)(pdf_url)
+        # Wrap the synchronous pdf_loader function with database_sync_to_async
+        return await database_sync_to_async(pdf_loader)(pdf_url)
 
     async def get_chain(self, pages):
-        # Wrap the synchronous get_chain function with sync_to_async
-        return await sync_to_async(get_chain)(pages)
+        # Wrap the synchronous get_chain function with database_sync_to_async
+        return await database_sync_to_async(get_chain)(pages)
+
+    async def get_chat(self, chat_id):
+        return await database_sync_to_async(Chat.objects.get)(id=chat_id)
+
+    @database_sync_to_async
+    def create_messages(self, input_data, message):
+        with transaction.atomic():
+            last_message = Message.objects.last()
+            message_id = 1 if last_message is None else last_message.id + 1
+
+            Message.objects.bulk_create([
+                Message(id=message_id, chat=self.chat, message=input_data, role="user"),
+                Message(id=message_id + 1, chat=self.chat, message=message, role="assistant")
+            ])
