@@ -15,3 +15,9 @@ class ChatSchemaCreate(Schema):
     pdf_name: str
     pdf_url: str
     file_key: str
+
+
+class MessagesSchemaList(Schema):
+    id: int
+    role: str
+    message: str

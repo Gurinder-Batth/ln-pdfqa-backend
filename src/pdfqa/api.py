@@ -4,8 +4,8 @@ from typing import List
 from ninja_extra import Router
 from ninja_jwt.authentication import JWTAuth
 
-from .models import Chat
-from .schemas import ChatSchemaList, ChatSchemaCreate
+from .models import Chat, Message
+from .schemas import ChatSchemaList, ChatSchemaCreate, MessagesSchemaList
 
 router = Router()
 
@@ -33,3 +33,8 @@ def create_chat(request, data: ChatSchemaCreate):
 @router.get("{chat_id}", auth=JWTAuth(), response=ChatSchemaList)
 def get_chat(request, chat_id: int):
     return Chat.objects.get(id=chat_id, user=request.user)
+
+
+@router.get("{chat_id}/messages", auth=JWTAuth(), response=List[MessagesSchemaList])
+def get_messages(request, chat_id: int):
+    return Message.objects.filter(chat_id=chat_id)
